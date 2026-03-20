@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alpha to Zendikar — An ABC of Magic</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+      transition: background 0.6s ease;
+    }
+
+    /* Book container */
+    .book-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Page */
+    .page {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+      max-width: 720px;
+      padding: 2rem;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .page.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Cover page */
+    .cover-page {
+      gap: 1.5rem;
+    }
+
+    .cover-page h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      color: #fff;
+      text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+      line-height: 1.2;
+    }
+
+    .cover-page .subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      color: rgba(255,255,255,0.9);
+      font-weight: 700;
+    }
+
+    .cover-page .start-btn {
+      margin-top: 1rem;
+      padding: 0.8rem 2.5rem;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.3rem;
+      border: none;
+      border-radius: 50px;
+      background: #fff;
+      color: #5b4a9e;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cover-page .start-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Letter pages */
+    .letter-page { gap: 0.8rem; }
+
+    .big-letter {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(4rem, 12vw, 8rem);
+      color: #fff;
+      text-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+      line-height: 1;
+    }
+
+    .card-frame {
+      position: relative;
+      width: clamp(220px, 50vw, 380px);
+      height: clamp(220px, 50vw, 380px);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      border: 6px solid rgba(255,255,255,0.5);
+      background: rgba(0,0,0,0.1);
+    }
+
+    .card-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-frame .loading-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.6);
+      font-size: 1.2rem;
+    }
+
+    .card-name {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(1.3rem, 3.5vw, 2rem);
+      color: #fff;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    }
+
+    .card-flavor {
+      font-size: clamp(0.85rem, 2vw, 1.1rem);
+      color: rgba(255,255,255,0.85);
+      font-style: italic;
+      max-width: 500px;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    /* Navigation */
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 1.6rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.4);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .nav-btn.prev { left: 1rem; }
+    .nav-btn.next { right: 1rem; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn:disabled:hover { transform: translateY(-50%); background: rgba(255,255,255,0.25); }
+
+    /* Page dots */
+    .page-dots {
+      position: fixed;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .page-dots .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .page-dots .dot.active {
+      background: #fff;
+      transform: scale(1.3);
+    }
+
+    /* End page */
+    .end-page h2 {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      color: #fff;
+      text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    }
+
+    .end-page p {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: rgba(255,255,255,0.9);
+      font-weight: 700;
+      margin-top: 1rem;
+    }
+
+    /* Stars background */
+    .stars {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+
+  <button class="nav-btn prev" id="prevBtn" aria-label="Previous page">&#9664;</button>
+  <button class="nav-btn next" id="nextBtn" aria-label="Next page">&#9654;</button>
+
+  <div class="book-wrapper" id="book"></div>
+  <div class="page-dots" id="dots"></div>
+
+  <script>
+    const cards = [
+      { letter: "A", name: "Ancestral Recall", flavor: "Draw three cards — for just one blue mana!", color: "#4a6fa5" },
+      { letter: "B", name: "Black Lotus", flavor: "The most legendary card in all the land.", color: "#2d2d2d" },
+      { letter: "C", name: "Counterspell", flavor: "\"No.\" — Every blue mage, ever.", color: "#2e5984" },
+      { letter: "D", name: "Dark Ritual", flavor: "Three black mana from one little spell!", color: "#3d2b4e" },
+      { letter: "E", name: "Emrakul, the Aeons Torn", flavor: "A giant so big, nothing can stop it.", color: "#5e4b6e" },
+      { letter: "F", name: "Force of Will", flavor: "Even when tapped out, blue always says no.", color: "#3a5998" },
+      { letter: "G", name: "Gaea's Cradle", flavor: "A forest that grows more powerful with every friend.", color: "#3a6b35" },
+      { letter: "H", name: "Helm of the Host", flavor: "One hero becomes a whole army!", color: "#8b6f47" },
+      { letter: "I", name: "Icy Manipulator", flavor: "Tap! Now your best thing can't do anything.", color: "#607b8d" },
+      { letter: "J", name: "Jace, the Mind Sculptor", flavor: "The smartest wizard, who can peek at the future.", color: "#2e6db4" },
+      { letter: "K", name: "Karn Liberated", flavor: "A silver giant who can restart the whole game!", color: "#8a8a8a" },
+      { letter: "L", name: "Lightning Bolt", flavor: "Three damage, one red mana. Zap!", color: "#c0392b" },
+      { letter: "M", name: "Mulldrifter", flavor: "A friendly fish that draws you two cards.", color: "#5b9bd5" },
+      { letter: "N", name: "Necropotence", flavor: "Pay a little life, get a LOT of cards.", color: "#1a1a2e" },
+      { letter: "O", name: "Ornithopter", flavor: "A little flying machine that costs nothing at all!", color: "#6b7b8d" },
+      { letter: "P", name: "Pestilence", flavor: "Everything hurts — but it hurts them more!", color: "#2d1b2e" },
+      { letter: "Q", name: "Questing Beast", flavor: "So many abilities, you need a magnifying glass!", color: "#4a7c3f" },
+      { letter: "R", name: "Rhystic Study", flavor: "\"Did you pay the one?\" — Your friends' least favorite question.", color: "#4169a5" },
+      { letter: "S", name: "Sol Ring", flavor: "Two mana from one — the best start in Commander!", color: "#7d6b4f" },
+      { letter: "T", name: "Time Walk", flavor: "Take another turn. Yes, really!", color: "#5b78a5" },
+      { letter: "U", name: "Umezawa's Jitte", flavor: "A magical sword that does absolutely everything.", color: "#6d6d6d" },
+      { letter: "V", name: "Vindicate", flavor: "Point at anything. Poof — it's gone!", color: "#4a3728" },
+      { letter: "W", name: "Wrath of God", flavor: "Everything goes away. Everything.", color: "#c4a94d" },
+      { letter: "X", name: "Xenagos, God of Revels", flavor: "The party god who makes creatures HUGE!", color: "#8b3a3a" },
+      { letter: "Y", name: "Yawgmoth's Will", flavor: "Your graveyard becomes your hand. Scary!", color: "#1a0a2e" },
+      { letter: "Z", name: "Zuran Orb", flavor: "Sacrifice your lands, save your life!", color: "#3a6b7e" }
+    ];
+
+    const bgColors = [
+      "#5b4a9e", // cover
+      ...cards.map(c => c.color),
+      "#5b4a9e"  // end
+    ];
+
+    const book = document.getElementById('book');
+    const dotsContainer = document.getElementById('dots');
+    let currentPage = 0;
+    const totalPages = cards.length + 2; // cover + 26 letters + end
+
+    // Build cover page
+    const cover = document.createElement('div');
+    cover.className = 'page cover-page active';
+    cover.innerHTML = `
+      <h1>Alpha to Zendikar</h1>
+      <p class="subtitle">An ABC Book of Magic: The Gathering</p>
+      <button class="start-btn" onclick="goToPage(1)">Open the Book</button>
+    `;
+    book.appendChild(cover);
+
+    // Build letter pages
+    cards.forEach((card, i) => {
+      const page = document.createElement('div');
+      page.className = 'page letter-page';
+      const scryfallUrl = `https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=${encodeURIComponent(card.name)}`;
+      page.innerHTML = `
+        <div class="big-letter">${card.letter}</div>
+        <div class="card-frame">
+          <img src="${scryfallUrl}" alt="${card.name} card art" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="loading-placeholder" style="display:none;">Art not available</div>
+        </div>
+        <div class="card-name">${card.name}</div>
+        <div class="card-flavor">${card.flavor}</div>
+      `;
+      book.appendChild(page);
+    });
+
+    // Build end page
+    const endPage = document.createElement('div');
+    endPage.className = 'page end-page';
+    endPage.innerHTML = `
+      <h2>The End</h2>
+      <p>Now you know your ABCs — from Alpha to Zendikar!</p>
+    `;
+    book.appendChild(endPage);
+
+    // Build dots
+    for (let i = 0; i < totalPages; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goToPage(i));
+      dotsContainer.appendChild(dot);
+    }
+
+    // Create stars
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      star.style.width = star.style.height = (2 + Math.random() * 3) + 'px';
+      starsEl.appendChild(star);
+    }
+
+    function goToPage(n) {
+      if (n < 0 || n >= totalPages) return;
+      const pages = document.querySelectorAll('.page');
+      const dots = document.querySelectorAll('.dot');
+
+      pages[currentPage].classList.remove('active');
+      dots[currentPage].classList.remove('active');
+
+      currentPage = n;
+
+      pages[currentPage].classList.add('active');
+      dots[currentPage].classList.add('active');
+
+      // Animate fresh
+      pages[currentPage].style.animation = 'none';
+      pages[currentPage].offsetHeight; // reflow
+      pages[currentPage].style.animation = '';
+
+      // Update bg
+      document.body.style.background = bgColors[currentPage];
+
+      // Update nav buttons
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages - 1;
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => goToPage(currentPage - 1));
+    document.getElementById('nextBtn').addEventListener('click', () => goToPage(currentPage + 1));
+
+    // Keyboard nav
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') goToPage(currentPage + 1);
+      if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) {
+        if (diff < 0) goToPage(currentPage + 1);
+        else goToPage(currentPage - 1);
+      }
+    });
+
+    // Init
+    document.body.style.background = bgColors[0];
+    document.getElementById('prevBtn').disabled = true;
+  </script>
+</body>
+</html>
